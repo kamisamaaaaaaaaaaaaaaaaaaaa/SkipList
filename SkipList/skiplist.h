@@ -129,7 +129,7 @@ int SkipList<K, V>::insert_element(const K key, const V value) {
     current = current->forward[0];
 
     if (current != NULL && current->get_key() == key) {
-        std::cout << "key: " << key << ", exists" << std::endl;
+        //std::cout << "key: " << key << ", exists" << std::endl;
         mtx.unlock();
         return 1;
     }
@@ -151,7 +151,7 @@ int SkipList<K, V>::insert_element(const K key, const V value) {
             inserted_node->forward[i] = update[i]->forward[i];
             update[i]->forward[i] = inserted_node;
         }
-        std::cout << "Successfully inserted key:" << key << ", value:" << value << std::endl;
+  /*      std::cout << "Successfully inserted key:" << key << ", value:" << value << std::endl;*/
         _element_count++;
     }
     mtx.unlock();
@@ -218,7 +218,7 @@ void SkipList<K, V>::delete_element(K key) {
 template<typename K, typename V>
 bool SkipList<K, V>::search_element(K key) {
 
-    std::cout << "search_element-----------------" << std::endl;
+    //std::cout << "search_element-----------------" << std::endl;
     Node<K, V>* current = _header;
 
     for (int i = _skip_list_level; i >= 0; i--) {
@@ -230,11 +230,11 @@ bool SkipList<K, V>::search_element(K key) {
     current = current->forward[0];
 
     if (current and current->get_key() == key) {
-        std::cout << "Found key: " << key << ", value: " << current->get_value() << std::endl;
+        //std::cout << "Found key: " << key << ", value: " << current->get_value() << std::endl;
         return true;
     }
 
-    std::cout << "Not Found Key:" << key << std::endl;
+    //std::cout << "Not Found Key:" << key << std::endl;
     return false;
 }
 
