@@ -2,8 +2,7 @@
 
 #include "skiplist.h"
 #include <iostream>
-#include <pthread.h>
-
+#include <Windows.h>
 #define MAX_THREADS 500
 #define STORE_FILE "store/dumpFile"
 
@@ -13,7 +12,6 @@ template<typename K,typename V>
 class DataBase {
 public:
 	DataBase(int n);
-	DataBase(int n,bool flag);
 
 	~DataBase();
 
@@ -24,10 +22,6 @@ public:
 	bool search(K k);
 	void show_table();
 	int size();
-	void set_num_threads(int);
-
-	bool multi_thread;
-	int num_threads;
 
 private:
 	std::ofstream _file_writer;
@@ -60,17 +54,7 @@ protected:
 };
 
 template<typename K,typename V>
-DataBase<K, V>::DataBase(int n) :skiplist(std::make_unique<SkipList<K, V>>(n)), multi_thread(false) {};
-
-template<typename K, typename V>
-DataBase<K, V>::DataBase(int n,bool flag) :skiplist(std::make_unique<SkipList<K, V>>(n)), multi_thread(flag) {
-	if (flag) num_threads = 100;
-};
-
-template<typename K, typename V>
-void DataBase<K, V>::set_num_threads(int num) {
-	num_threads = min(num,MAX_THREADS);
-}
+DataBase<K, V>::DataBase(int n) :skiplist(std::make_unique<SkipList<K, V>>(n)){};
 
 template<typename K,typename V>
 DataBase<K, V>::~DataBase() {

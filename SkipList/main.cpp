@@ -1,8 +1,10 @@
 #include <iostream>
 #include <string>
-#include <pthread.h>
+#include <Windows.h>
 #include "database.h"
 #define FILE_PATH "./store/dumpFile"
+
+const int THREAD_NUM = 4;
 
 class Test :public DataBase<int, std::string> {
 public:
@@ -27,13 +29,41 @@ protected:
     }
 };
 
+Test database(6);
+
+template<typename K,typename V>
+struct data {
+    K k;
+    V v;
+};
+
+DWORD WINAPI ThreadFunc(LPVOID p) {
+    data<int, std::string>* pmd = (data<int, std::string>*)p;
+    int key = pmd->k;
+    std::string val = pmd->v;
+
+    database.insert(key, val);
+
+    return 0;
+}
+
 int main() {
 
-    Test database(6);
-    database.insert(1, "1111");
-    database.insert(3, "3333");
-    database.insert(4, "4444");
-    database.insert(5, "5555");
+    data<int,std::string> mydt[THREAD_NUM];
+    HANDLE hThread[THREAD_NUM];
+
+    for (int i = 0; i < THREAD_NUM; i++) {
+        mydt[i].k = i;
+        mydt[i].v = std::string(4, char('0' + i));
+        hThread[i] = CreateThread(NULL, 0, ThreadFunc, &mydt[i], 0, NULL);
+    }
+
+    WaitForMultipleObjects(THREAD_NUM, hThread, true, INFINITE);
+
+    //database.insert(1, "1111");
+    //database.insert(3, "3333");
+    //database.insert(4, "4444");
+    //database.insert(5, "5555");
 
     std::cout << "database size:" << database.size() << std::endl;
 
@@ -42,7 +72,7 @@ int main() {
     database.load_file();
 
     database.search(9);
-    database.search(18);
+    database.search(3);
 
 
     database.show_table();
