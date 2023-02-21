@@ -7,10 +7,10 @@
 #include <fstream>
 #include <string>
 
-#define STORE_FILE "store/dumpFile"
+
 
 std::mutex mtx; 
-std::string delimiter = ":";
+
 
 
 template<typename K,typename V>
@@ -83,12 +83,8 @@ public:
     bool search_element(K);
     void delete_element(K);
     int size();
-    void dump_file();
-    void load_file();
+    Node<K, V>* get_header();
 
-private:
-    void get_key_value_from_string(const std::string& str, std::string* key, std::string* value);
-    bool is_valid_string(const std::string& str);
 
 private:
     int _max_level;
@@ -99,25 +95,18 @@ private:
 
     int _element_count;
 
-    std::ofstream _file_writer;
-    std::ifstream _file_reader;
-
 protected:
-    virtual K parse_key(std::string &s) {
-        K key{};
-        return key;
-    }
 
-    virtual V parse_value(std::string& s) {
-        V value{};
-        return value;
-    }
-
-    virtual std::string node_display(Node<K,V>* node) {
+    virtual std::string node_display(Node<K, V>* node) {
         return "";
     }
+
 };
 
+template<typename K, typename V>
+Node<K, V>* SkipList<K, V>::get_header() {
+    return _header;
+}
 
 template<typename K, typename V>
 Node<K, V>* SkipList<K, V>::create_node(const K k, const V v, int level) {
@@ -189,68 +178,8 @@ void SkipList<K, V>::display_list() {
 }
 
 template<typename K, typename V>
-void SkipList<K, V>::dump_file() {
-
-    std::cout << "dump_file-----------------" << std::endl;
-    _file_writer.open(STORE_FILE);
-    Node<K, V>* node = this->_header->forward[0];
-
-    while (node != NULL) {
-        _file_writer << node->get_key() << ":" << node->get_value() << "\n";
-        std::cout << node->get_key() << ":" << node->get_value() << ";\n";
-        node = node->forward[0];
-    }
-
-    _file_writer.flush();
-    _file_writer.close();
-    return;
-}
-
-template<typename K, typename V>
-void SkipList<K, V>::load_file() {
-
-    _file_reader.open(STORE_FILE);
-    std::cout << "load_file-----------------" << std::endl;
-    std::string line;
-    std::string* key = new std::string();
-    std::string* value = new std::string();
-
-    while (getline(_file_reader, line)) {
-        get_key_value_from_string(line, key, value);
-        if (key->empty() || value->empty()) {
-            continue;
-        }
-        insert_element(parse_key(*key), parse_value(*value));
-        std::cout << "key:" << *key << "value:" << *value << std::endl;
-    }
-    _file_reader.close();
-}
-
-template<typename K, typename V>
 int SkipList<K, V>::size() {
     return _element_count;
-}
-
-template<typename K, typename V>
-void SkipList<K, V>::get_key_value_from_string(const std::string& str, std::string* key, std::string* value) {
-
-    if (!is_valid_string(str)) {
-        return;
-    }
-    *key = str.substr(0, str.find(delimiter));
-    *value = str.substr(str.find(delimiter) + 1, str.length());
-}
-
-template<typename K, typename V>
-bool SkipList<K, V>::is_valid_string(const std::string& str) {
-
-    if (str.empty()) {
-        return false;
-    }
-    if (str.find(delimiter) == std::string::npos) {
-        return false;
-    }
-    return true;
 }
 
 template<typename K, typename V>
@@ -327,13 +256,6 @@ SkipList<K, V>::SkipList(int max_level) {
 
 template<typename K, typename V>
 SkipList<K, V>::~SkipList() {
-
-    if (_file_writer.is_open()) {
-        _file_writer.close();
-    }
-    if (_file_reader.is_open()) {
-        _file_reader.close();
-    }
     delete _header;
 }
 

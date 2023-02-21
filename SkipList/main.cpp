@@ -1,11 +1,11 @@
 #include <iostream>
 #include <string>
-#include "skiplist.h"
+#include "database.h"
 #define FILE_PATH "./store/dumpFile"
 
-class Test :public SkipList<int, std::string> {
+class Test :public DataBase<int, std::string> {
 public:
-    Test(int n) :SkipList(n) {
+    Test(int n) :DataBase(n) {
     
     }
 protected:
@@ -17,35 +17,41 @@ protected:
         return s;
     }
 
-    virtual std::string node_display(Node<int,std::string>* node) {
-        return "["+std::to_string(node->get_key())+"->"+node->get_value()+"]";
+    virtual std::string key_items_showed(int k) {
+        return std::to_string(k);
+    }
+
+    virtual std::string value_items_showed(std::string v) {
+        return v;
     }
 };
 
 int main() {
 
-    Test skipList(6);
-    skipList.insert_element(1, "1111");
-    skipList.insert_element(3, "3333");
-    skipList.insert_element(4, "4444");
-    skipList.insert_element(5, "5555");
+    Test database(6);
+    database.insert(1, "1111");
+    database.insert(3, "3333");
+    database.insert(4, "4444");
+    database.insert(5, "5555");
 
-    std::cout << "skipList size:" << skipList.size() << std::endl;
+    std::cout << "database size:" << database.size() << std::endl;
 
-    skipList.dump_file();
+    database.dump_file();
 
-    skipList.load_file();
+    database.load_file();
 
-    skipList.search_element(9);
-    skipList.search_element(18);
+    database.search(9);
+    database.search(18);
 
 
-    skipList.display_list();
+    database.show_table();
 
-    skipList.delete_element(3);
-    skipList.delete_element(7);
+    database.remove(3);
+    database.remove(7);
 
-    std::cout << "skipList size:" << skipList.size() << std::endl;
+    std::cout << "database size:" << database.size() << std::endl;
 
-    skipList.display_list();
+    database.show_table();
+
+    return 0;
 }
