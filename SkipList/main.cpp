@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <pthread.h>
 #include "database.h"
 #define FILE_PATH "./store/dumpFile"
 
