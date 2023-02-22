@@ -8,15 +8,30 @@ const int THREAD_NUM = 4;
 
 class Test :public DataBase<int, std::string> {
 public:
-    Test(int n) :DataBase(n) {
+
+    template<typename CMP>
+    Test(int n,CMP cmp) :DataBase(n,cmp) {
     
     }
+
+    Test(int n) :DataBase(n) {
+
+    }
+
 protected:
-    virtual int parse_key(std::string& s) {
+    virtual std::string encoding_key(int key) {
+        return std::to_string(key);
+    }
+
+    virtual std::string encoding_value(std::string v) {
+        return v;
+    }
+
+    virtual int decoding_key(std::string& s) {
         return stoi(s);
     }
 
-    virtual std::string parse_value(std::string& s) {
+    virtual std::string decoding_value(std::string& s) {
         return s;
     }
 
@@ -29,7 +44,11 @@ protected:
     }
 };
 
-Test database(6);
+bool cmp(const int a,const int b){
+    return a > b;
+}
+
+Test database(6,cmp);
 
 template<typename K,typename V>
 struct data {

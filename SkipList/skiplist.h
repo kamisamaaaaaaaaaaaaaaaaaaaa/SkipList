@@ -26,6 +26,7 @@ public:
 
 	void set_value(V);
 
+    //指针数组forward[i]表示第i层该节点指向哪个节点
 	Node<K, V>** forward;
 
 	int node_level;
@@ -36,14 +37,9 @@ private:
 };
 
 template<typename K, typename V>
-Node<K, V>::Node(const K k, const V v, int level) {
-	this->key = k;
-	this->value = v;
-	this->node_level = level;
-
-	this->forward = new Node<K, V>*[level + 1];
-
-	memset(this->forward, 0, sizeof(Node<K, V>*) * (level + 1));
+Node<K, V>::Node(const K k, const V v, int level):key(k), value(v), node_level(level){
+	forward = new Node<K, V>*[level + 1];
+	memset(forward, 0, sizeof(Node<K, V>*) * (level + 1));
 };
 
 template<typename K, typename V>
@@ -70,7 +66,11 @@ template <typename K, typename V>
 class SkipList {
 
 public:
-    SkipList(int);
+    template<typename CMP>
+    SkipList(int n,CMP cmp);
+
+    SkipList(int n);
+
     ~SkipList();
     int get_random_level();
     Node<K, V>* create_node(K, V, int);
@@ -91,6 +91,12 @@ private:
 
     int _element_count;
 
+    bool (*_cmp)(K, K);
+
+    bool compare(K, K);
+
+    bool equal(K, K);
+
 protected:
 
     virtual std::string node_display(Node<K, V>* node) {
@@ -98,6 +104,23 @@ protected:
     }
 
 };
+
+//小于return true
+template<typename K, typename V>
+bool SkipList<K, V>::compare(K k1,K k2) {
+    try {
+        if (_cmp) return _cmp(k1, k2);
+        else return k1 < k2;
+    }
+    catch (...) {
+        std::cout << "请传入正确的比较函数或重载<操作符" << std::endl;
+    }
+}
+
+template<typename K, typename V>
+bool SkipList<K, V>::equal(K k1, K k2) {
+    return !compare(k1, k2) && !compare(k2, k1);
+}
 
 template<typename K, typename V>
 Node<K, V>* SkipList<K, V>::get_header() {
@@ -120,7 +143,7 @@ int SkipList<K, V>::insert_element(const K key, const V value) {
     memset(update, 0, sizeof(Node<K, V>*) * (_max_level + 1));
 
     for (int i = _skip_list_level; i >= 0; i--) {
-        while (current->forward[i] != NULL && current->forward[i]->get_key() < key) {
+        while (current->forward[i] != NULL && compare(current->forward[i]->get_key(),key)) {
             current = current->forward[i];
         }
         update[i] = current;
@@ -128,13 +151,13 @@ int SkipList<K, V>::insert_element(const K key, const V value) {
 
     current = current->forward[0];
 
-    if (current != NULL && current->get_key() == key) {
-        //std::cout << "key: " << key << ", exists" << std::endl;
+    if (current != NULL && equal(current->get_key(),key)) {
+        std::cout << "key: " << key << ", exists" << std::endl;
         mtx.unlock();
         return 1;
     }
 
-    if (current == NULL || current->get_key() != key) {
+    if (current == NULL || !equal(current->get_key(), key)) {
 
         int random_level = get_random_level();
 
@@ -182,19 +205,19 @@ template<typename K, typename V>
 void SkipList<K, V>::delete_element(K key) {
 
     mtx.lock();
-    Node<K, V>* current = this->_header;
+    Node<K, V>* current = _header;
     Node<K, V>** update = new Node<K,V>*[_max_level + 1];
     memset(update, 0, sizeof(Node<K, V>*) * (_max_level + 1));
 
     for (int i = _skip_list_level; i >= 0; i--) {
-        while (current->forward[i] != NULL && current->forward[i]->get_key() < key) {
+        while (current->forward[i] != NULL && compare(current->forward[i]->get_key(),key)) {
             current = current->forward[i];
         }
         update[i] = current;
     }
 
     current = current->forward[0];
-    if (current != NULL && current->get_key() == key) {
+    if (current != NULL && equal(current->get_key(),key)) {
 
         for (int i = 0; i <= _skip_list_level; i++) {
 
@@ -203,6 +226,7 @@ void SkipList<K, V>::delete_element(K key) {
 
             update[i]->forward[i] = current->forward[i];
         }
+        delete current;
 
         while (_skip_list_level > 0 && _header->forward[_skip_list_level] == 0) {
             _skip_list_level--;
@@ -222,33 +246,36 @@ bool SkipList<K, V>::search_element(K key) {
     Node<K, V>* current = _header;
 
     for (int i = _skip_list_level; i >= 0; i--) {
-        while (current->forward[i] && current->forward[i]->get_key() < key) {
+        while (current->forward[i] && compare(current->forward[i]->get_key(), key)) {
             current = current->forward[i];
         }
     }
 
     current = current->forward[0];
 
-    if (current and current->get_key() == key) {
+    if (current and equal(current->get_key(), key)) {
         //std::cout << "Found key: " << key << ", value: " << current->get_value() << std::endl;
         return true;
     }
 
-    //std::cout << "Not Found Key:" << key << std::endl;
+  /*  std::cout << "Not Found Key:" << key << std::endl;*/
     return false;
 }
 
 template<typename K, typename V>
-SkipList<K, V>::SkipList(int max_level) {
-
-    this->_max_level = max_level;
-    this->_skip_list_level = 0;
-    this->_element_count = 0;
-
+SkipList<K, V>::SkipList(int max_level):_max_level(max_level), _skip_list_level(0), _element_count(0),_cmp(NULL){
     K k{};
     V v{};
     this->_header = new Node<K, V>(k, v, _max_level);
 };
+
+template<typename K, typename V>
+template<typename CMP>
+SkipList<K, V>::SkipList(int max_level, CMP cmp):_max_level(max_level), _skip_list_level(0), _element_count(0),_cmp(cmp) {
+    K k{};
+    V v{};
+    this->_header = new Node<K, V>(k, v, _max_level);
+}
 
 template<typename K, typename V>
 SkipList<K, V>::~SkipList() {

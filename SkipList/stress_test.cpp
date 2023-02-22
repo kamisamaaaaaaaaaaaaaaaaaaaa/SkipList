@@ -18,11 +18,19 @@ public:
     Test(int n) :DataBase<int, std::string>(n) {};
 
 protected:
-    virtual int parse_key(std::string& s) {
+    virtual std::string encoding_key(int key) {
+        return std::to_string(key);
+    }
+    
+    virtual std::string encoding_value(std::string v) {
+        return v;
+    }
+
+    virtual int decoding_key(std::string& s) {
         return stoi(s);
     }
 
-    virtual std::string parse_value(std::string& s) {
+    virtual std::string decoding_value(std::string& s) {
         return s;
     }
 

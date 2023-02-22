@@ -3,7 +3,6 @@
 #include "skiplist.h"
 #include <iostream>
 #include <Windows.h>
-#define MAX_THREADS 500
 #define STORE_FILE "store/dumpFile"
 
 std::string delimiter = ":";
@@ -11,6 +10,9 @@ std::string delimiter = ":";
 template<typename K,typename V>
 class DataBase {
 public:
+	template<typename CMP>
+	DataBase(int n,CMP cmp);
+
 	DataBase(int n);
 
 	~DataBase();
@@ -27,19 +29,27 @@ private:
 	std::ofstream _file_writer;
 	std::ifstream _file_reader;
 
-	std::unique_ptr<SkipList<K, V>> skiplist;
+	SkipList<K, V>* skiplist;
 
 	void get_key_value_from_string(const std::string& str, std::string* key, std::string* value);
 	bool is_valid_string(const std::string& str);
 
 
 protected:
-	virtual K parse_key(std::string& s) {
+	virtual std::string encoding_key(K key) {
+		return "";
+	}
+
+	virtual std::string encoding_value(V v) {
+		return "";
+	}
+
+	virtual K decoding_key(std::string& s) {
 		K key{};
 		return key;
 	}
 
-	virtual V parse_value(std::string& s) {
+	virtual V decoding_value(std::string& s) {
 		V value{};
 		return value;
 	}
@@ -54,7 +64,15 @@ protected:
 };
 
 template<typename K,typename V>
-DataBase<K, V>::DataBase(int n) :skiplist(std::make_unique<SkipList<K, V>>(n)){};
+template<typename CMP>
+DataBase<K, V>::DataBase(int n,CMP cmp){
+	skiplist = new SkipList<K,V>(n,cmp);
+};
+
+template<typename K, typename V>
+DataBase<K, V>::DataBase(int n) {
+	skiplist = new SkipList<K, V>(n);
+};
 
 template<typename K,typename V>
 DataBase<K, V>::~DataBase() {
@@ -65,7 +83,7 @@ DataBase<K, V>::~DataBase() {
 		_file_reader.close();
 	}
 
-	skiplist.reset();
+	delete skiplist;
 };
 
 template<typename K, typename V>
@@ -90,8 +108,8 @@ void DataBase<K, V>::dump_file() {
 	Node<K, V>* node = skiplist->get_header()->forward[0];
 
 	while (node != NULL) {
-		_file_writer << node->get_key() << ":" << node->get_value() << "\n";
-		std::cout << node->get_key() << ":" << node->get_value() << ";\n";
+		_file_writer << encoding_key(node->get_key()) << ":" << encoding_value(node->get_value()) << "\n";
+		std::cout << encoding_key(node->get_key()) << ":" << encoding_value(node->get_value()) << ";\n";
 		node = node->forward[0];
 	}
 
@@ -113,7 +131,7 @@ void DataBase<K, V>::load_file() {
 		if (key->empty() || value->empty()) {
 			continue;
 		}
-		insert(parse_key(*key), parse_value(*value));
+		insert(decoding_key(*key), decoding_value(*value));
 		std::cout << "key:" << *key << " " << "value:" << *value << std::endl;
 	}
 	_file_reader.close();
